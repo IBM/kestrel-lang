@@ -241,10 +241,13 @@ def check_entity_identifier_existence_in_mapping(
                 try:
                     reduce(dict.__getitem__, idx.split("."), entity)
                 except KeyError:
-                    raise IncompleteDataMapping(
-                        f"Identifier '{idx}' for entity '{entity_name}' is missing "
-                        f"in data mapping at '{interface_information}'"
+                    msg_body = f"Identifier '{idx}' for entity '{entity_name}' is missing in data mapping"
+                    appendix = (
+                        f" at '{interface_information}'"
+                        if interface_information
+                        else ""
                     )
+                    raise IncompleteDataMapping(msg_body + appendix)
 
 
 @typechecked
