@@ -1,10 +1,13 @@
 import os
+import sys
 import yaml
+from importlib import resources
 from pathlib import Path
 import logging
 from typeguard import typechecked
-from typing import Mapping, Union
+from typing import Mapping, Union, Iterable
 
+from kestrel.__future__ import is_python_older_than_minor_version
 from kestrel.utils import update_nested_dict, load_data_file
 from kestrel.exceptions import InvalidYamlInConfig, InvalidKestrelConfig
 
@@ -13,6 +16,21 @@ CONFIG_PATH_DEFAULT = CONFIG_DIR_DEFAULT / "kestrel.yaml"
 CONFIG_PATH_ENV_VAR = "KESTREL_CONFIG"  # override CONFIG_PATH_DEFAULT if provided
 
 _logger = logging.getLogger(__name__)
+
+
+@typechecked
+def list_yaml_files_in_module(module_name: str) -> Iterable[str]:
+    """List YAML files inside a Python module"""
+    try:
+        # resources.files() is introduced in Python 3.9
+        p = resources.files(module_name)
+    except AttributeError as e:
+        # Python 3.8; deprecation warning forward
+        if is_python_older_than_minor_version(9):
+            p = Path(os.path.dirname(sys.modules[module_name].__file__))
+        else:
+            raise e
+    return [x.name for x in p.glob("*.yaml")]
 
 
 @typechecked

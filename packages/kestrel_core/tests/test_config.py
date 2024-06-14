@@ -1,4 +1,4 @@
-from kestrel.config.utils import load_kestrel_config
+from kestrel.config.utils import load_kestrel_config, list_yaml_files_in_module
 import os
 
 
@@ -79,3 +79,7 @@ loadtest:
     assert config["credentials"]["username"] == "test-user"
     assert config["credentials"]["password"] == "test-password"
     assert config["loadtest"]["xyz"]["abc"]["test"] == "fake-value"
+
+def test_list_yaml_files():
+    xs = list_yaml_files_in_module("kestrel.mapping.entityname")
+    assert set(xs) == set(("alias.yaml", "ecs.yaml", "stix.yaml"))
