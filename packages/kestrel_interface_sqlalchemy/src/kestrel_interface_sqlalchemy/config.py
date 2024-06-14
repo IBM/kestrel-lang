@@ -43,7 +43,9 @@ class DataSource(DataClassJSONMixin):
 
         kestrel_config = load_kestrel_config()
         check_entity_identifier_existence_in_mapping(
-            self.data_model_map, kestrel_config["entity_identifier"]
+            self.data_model_map,
+            kestrel_config["entity_identifier"],
+            "sqlalchemy interface",
         )
 
 

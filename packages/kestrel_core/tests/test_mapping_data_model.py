@@ -221,4 +221,4 @@ def test_translate_dataframe():  #TODO: more testing here
 def test_incomplete_mapping_no_identifier():
     identifier_config = load_kestrel_config()["entity_identifier"]
     with pytest.raises(IncompleteDataMapping):
-        check_entity_identifier_existence_in_mapping(INCOMPLETE_MAPPING, identifier_config)
+        check_entity_identifier_existence_in_mapping(INCOMPLETE_MAPPING, identifier_config, "test interface")
