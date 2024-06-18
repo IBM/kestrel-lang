@@ -165,12 +165,18 @@ def test_translate_comparison_to_native(dmm, field, op, value, expected_result):
             ("process.file.path", "=", "C:\\TMP\\foo.exe"),
             ("process.file.name", "=", "foo.exe"),
             ("process.file.parent_folder", "=", "C:\\TMP"),
+            ("actor.process.file.path", "=", "C:\\TMP\\foo.exe"),
+            ("actor.process.file.name", "=", "foo.exe"),
+            ("actor.process.file.parent_folder", "=", "C:\\TMP"),
          ]),
         (ECS_MAPPING, "process.executable", "LIKE", "%\\foo.exe",
          [
             ("process.file.path", "LIKE", "%\\foo.exe"),
             ("process.file.name", "LIKE", "foo.exe"),     #TODO: could optimize this to "="
             ("process.file.parent_folder", "LIKE", "%"),  #TODO: could eliminate this?
+            ("actor.process.file.path", "LIKE", "%\\foo.exe"),
+            ("actor.process.file.name", "LIKE", "foo.exe"),     #TODO: could optimize this to "="
+            ("actor.process.file.parent_folder", "LIKE", "%"),  #TODO: could eliminate this?
          ]),
         (STIX_MAPPING, "ipv4-addr:value", "=", "198.51.100.13",
          [

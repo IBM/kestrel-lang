@@ -9,7 +9,7 @@ endpoint: &endpoint
 
 
 # https://schema.ocsf.io/1.1.0/objects/user
-user:
+user: &user
     domain: user.domain
     full_name: user.full_name
     name: user.name
@@ -67,7 +67,7 @@ group:
 
 
 # https://schema.ocsf.io/1.1.0/objects/process
-process:
+process: &process
     endpoint: *endpoint
     cmd_line: process.command_line
     name: process.name
@@ -282,3 +282,12 @@ reg_key:
 reg_value:
     endpoint: *endpoint
     path: registry.value
+
+
+# To simplify mapping, we do not cover parent process in actor.process
+# - This semantic only appear in Process Activity [1007], please use `process.parent_process` to specify in this case
+# - This works in Activity besides Process Activity [1007]
+actor.process: *process
+
+
+actor.user: *user

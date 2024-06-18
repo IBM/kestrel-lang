@@ -6,11 +6,3 @@ registryvalue: reg_value
 
 src_endpoint: network_endpoint
 dst_endpoint: network_endpoint
-
-# Extended mapping to cover special field in OCSF activity
-actor.user: user
-
-# To simplify mapping, we do not cover parent process in actor.process
-# - This semantic only appear in Process Activity [1007], please use `process.parent_process` to specify in this case
-# - This works in Activity besides Process Activity [1007]
-actor.process: process

@@ -280,7 +280,6 @@ DISP d2
         assert query == f"SELECT * \nFROM (SELECT * \nFROM {c3.id.hex}) AS domain"
 
         assert len(disp.graphlets[3].graph["nodes"]) == 12
-        print(disp.graphlets[3].graph["nodes"])
         query = disp.graphlets[3].query.statement.replace('"', '')
         p2 = session.irgraph.get_variable("p2")
         p2pa = next(session.irgraph.successors(p2))

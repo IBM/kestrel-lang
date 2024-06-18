@@ -39,7 +39,7 @@ file:
 
 
 # https://schema.ocsf.io/1.1.0/objects/process
-process:
+process: &process
     cmd_line: process:command_line
     name: process:name
     pid: process:pid
@@ -142,7 +142,7 @@ certificate:
 
 
 # https://schema.ocsf.io/1.1.0/objects/user
-user:
+user: &user
     full_name: user-account:display_name
     name: user-account:account_login
     type: user-account:account_type
@@ -157,3 +157,12 @@ reg_key:
 # https://schema.ocsf.io/1.2.0/objects/win/reg_value?extensions=win
 reg_value:
     path: windows-registry-key.value.data
+
+
+# To simplify mapping, we do not cover parent process in actor.process
+# - This semantic only appear in Process Activity [1007], please use `process.parent_process` to specify in this case
+# - This works in Activity besides Process Activity [1007]
+actor.process: *process
+
+
+actor.user: *user

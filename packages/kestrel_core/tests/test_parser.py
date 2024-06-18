@@ -94,11 +94,7 @@ def get_parsed_filter_exp(stmt):
     return filter_node.exp
 
 
-def test_parser_mapping_single_comparison_to_single_value():
-    # test for attributes in the form entity_name:property_name
-    stmt = "x = GET process FROM if://ds WHERE process:binary_ref.name = 'foo'"
-    parse_filter = get_parsed_filter_exp(stmt)
-    assert parse_filter.field == 'process.file.name'
+def test_parser_mapping_single_comparison():
     # test when entity name is not included in the attributes
     stmt = "x = GET process FROM if://ds WHERE binary_ref.name = 'foo'"
     parse_filter = get_parsed_filter_exp(stmt)
@@ -107,6 +103,13 @@ def test_parser_mapping_single_comparison_to_single_value():
     stmt = "x = GET ipv4-addr FROM if://ds WHERE value = '192.168.22.3'"
     parse_filter = get_parsed_filter_exp(stmt)
     assert parse_filter.field == 'network_endpoint.ip'
+
+    # this is a special case in parser logic
+    # if the field already has entity prefix, do not filter it with entity type
+    # since extended graph (from non-return entity) can be put here
+    stmt = "x = GET process FROM if://ds WHERE process:binary_ref.name = 'foo'"
+    fields = set([x.field for x in get_parsed_filter_exp(stmt).comps])
+    assert fields == set(('process.file.name', 'actor.process.file.name'))
 
 
 def test_parser_stix_mapping_network_traffic():
