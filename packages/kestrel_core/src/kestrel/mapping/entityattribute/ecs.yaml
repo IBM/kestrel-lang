@@ -147,8 +147,7 @@ process:
         uid: process.user.id
 
 
-# src_endpoint: see https://schema.ocsf.io/1.1.0/objects/endpoint
-src_endpoint: &src_ref
+src_endpoint: &src_endpoint
     domain:
         - client.domain
         - source.domain
@@ -166,8 +165,7 @@ src_endpoint: &src_ref
         - source.port
 
 
-# dst_endpoint: see https://schema.ocsf.io/1.1.0/objects/endpoint
-dst_endpoint: &dst_ref
+dst_endpoint: &dst_endpoint
     domain:
         - server.domain
         - destination.domain
@@ -185,9 +183,37 @@ dst_endpoint: &dst_ref
         - destination.port
 
 
+# endpoint: see https://schema.ocsf.io/1.2.0/objects/network_endpoint
+network_endpoint:
+    domain:
+        - client.domain
+        - source.domain
+        - server.domain
+        - destination.domain
+    hostname:
+        - client.domain
+        - source.domain
+        - server.domain
+        - destination.domain
+    ip:
+        - client.ip
+        - source.ip
+        - server.ip
+        - destination.ip
+    mac:
+        - client.mac
+        - source.mac
+        - server.mac
+        - destination.mac
+    port:
+        - client.port
+        - source.port
+        - server.port
+        - destination.port
+
+
 # https://schema.ocsf.io/1.1.0/objects/network_traffic
-# should be `network_traffic`?
-traffic: &traffic
+network_traffic: &network_traffic
     bytes: network.bytes
     bytes_in:
         - destination.bytes
@@ -231,9 +257,9 @@ certificate:
 # https://schema.ocsf.io/1.1.0/classes/network_activity
 # Network Activity [4001] Class
 network_activity:
-    src_endpoint: *src_ref
-    dst_endpoint: *dst_ref
-    traffic: *traffic
+    src_endpoint: *src_endpoint
+    dst_endpoint: *dst_endpoint
+    traffic: *network_traffic
 
 
 # https://schema.ocsf.io/1.2.0/objects/email

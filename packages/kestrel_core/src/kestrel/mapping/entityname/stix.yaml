@@ -1,21 +1,19 @@
 # TODO mapping for artifact:
 autonomous-system: organization
 directory: file
-domain-name: endpoint
+domain-name: network_endpoint
 email-addr: user
 email-message: email
 file: file
-ipv4-addr: endpoint
-ipv6-addr: endpoint
-mac-addr: endpoint
+ipv4-addr: network_endpoint
+ipv6-addr: network_endpoint
+mac-addr: network_endpoint
 network-traffic: network_activity
 process: process
 software: product
 url: http_request
 user-account: user
-x-ibm-finding: security_finding
-x-ibm-ttp-tagging: attack
-x-oca-asset: device
+x-oca-asset: endpoint
 x-oca-event: base_event
 x509-certificate: certificate
-windows-registry-key: win/registry_key
+windows-registry-key: registry_key

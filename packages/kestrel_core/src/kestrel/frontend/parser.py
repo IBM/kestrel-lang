@@ -16,27 +16,26 @@ import yaml
 _logger = logging.getLogger(__name__)
 
 
+# cache mapping in the module
 frontend_mapping = {}
 
 
 @typechecked
 def get_frontend_mapping(mapping_type: str, mapping_package: str) -> dict:
     global frontend_mapping
-    mapping = frontend_mapping.get(mapping_type)
-    if mapping is not None:
-        return mapping
-    for yaml_file in list_yaml_files_in_module(mapping_package):
-        try:
-            mapping_str = load_data_file(mapping_package, "ecs.yaml")
-            mapping = yaml.safe_load(mapping_str)
+    if mapping_type not in frontend_mapping:
+        mapping = {}
+        for yaml_file in list_yaml_files_in_module(mapping_package):
+            mapping_str = load_data_file(mapping_package, yaml_file)
+            mapping_ind = yaml.safe_load(mapping_str)
             if mapping_type == "property":
                 # New data model map is always OCSF->native
-                mapping = reverse_mapping(mapping)
-            frontend_mapping[mapping_type] = mapping
-        except Exception as ex:
-            _logger.error("Failed to load %s", mapping_str, exc_info=ex)
-            mapping = None  # FIXME: this is not a dict
-    return mapping
+                mapping_ind = reverse_mapping(mapping_ind)
+            # the entity mapping or reversed property mapping is flatten structure
+            # so just dict.update() will do
+            mapping.update(mapping_ind)
+        frontend_mapping[mapping_type] = mapping
+    return frontend_mapping[mapping_type]
 
 
 @typechecked
@@ -58,9 +57,7 @@ _parser = Lark(
     load_data_file("kestrel.frontend", "kestrel.lark"),
     parser="lalr",
     transformer=_KestrelT(
-        entity_map=get_frontend_mapping(
-            "entity", "kestrel.mapping.entityname"
-        ),
+        entity_map=get_frontend_mapping("entity", "kestrel.mapping.entityname"),
         property_map=get_frontend_mapping(
             "property", "kestrel.mapping.entityattribute"
         ),

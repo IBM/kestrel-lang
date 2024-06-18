@@ -79,40 +79,44 @@ process:
             parent_folder: process:parent_ref.binary_ref.parent_directory_ref.path
 
 
-# dst_endpoint: see https://schema.ocsf.io/1.1.0/objects/endpoint
-dst_endpoint:
-    ip:
-        - network-traffic:dst_ref.value
-        - ipv4-addr:value
-    port: network-traffic:dst_port
-
-
-# src_endpoint: see https://schema.ocsf.io/1.1.0/objects/endpoint
-src_endpoint:
-    ip:
-        - network-traffic:src_ref.value
-        - ipv4-addr:value
-    port: network-traffic:src_port
-
-
 # https://schema.ocsf.io/1.1.0/objects/endpoint
 endpoint:
     ip: ipv4-addr:value
 
 
-# https://schema.ocsf.io/1.1.0/objects/device
-device:
-    ip: ipv4-addr:value
+network_endpoint:
+    ip:
+        - ipv4-addr:value
+        - network-traffic:src_ref.value
+        - network-traffic:dst_ref.value
+
+
+src_endpoint: &src_endpoint
+    ip: network-traffic:src_ref.value
+    port: network-traffic:src_port
+
+
+dst_endpoint: &dst_endpoint
+    ip: network-traffic:dst_ref.value
+    port: network-traffic:dst_port
 
 
 # https://schema.ocsf.io/1.1.0/objects/network_traffic
-traffic:  # should be `network_traffic`?
+network_traffic: &network_traffic
     #TODO: bytes: sum of byte counts?
     bytes_in: network-traffic:dst_byte_count
     bytes_out: network-traffic:src_byte_count
     #TODO: packets: sum of packet counts?
     packets_in: network-traffic:dst_packets
     packets_out: network-traffic:src_packets
+
+
+# https://schema.ocsf.io/1.1.0/classes/network_activity
+# Network Activity [4001] Class
+network_activity:
+    src_endpoint: *src_endpoint
+    dst_endpoint: *dst_endpoint
+    traffic: *network_traffic
 
 
 # https://schema.ocsf.io/1.1.0/objects/network_connection_info

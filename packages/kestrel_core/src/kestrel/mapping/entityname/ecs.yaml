@@ -7,3 +7,5 @@ server: network_endpoint
 source: network_endpoint
 network: network_activity
 user: user
+host: endpoint
+registry: reg_key

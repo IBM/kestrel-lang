@@ -46,9 +46,9 @@ def _add_attr(obj: dict, key: str, value: str):
         obj[key] = value
     else:
         existing = obj[key]
-        if isinstance(existing, str):
+        if isinstance(existing, str) and existing != value:
             obj[key] = [existing, value]
-        else:
+        elif value not in existing:
             existing.append(value)
 
 

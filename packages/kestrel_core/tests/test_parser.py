@@ -98,21 +98,21 @@ def test_parser_mapping_single_comparison_to_single_value():
     # test for attributes in the form entity_name:property_name
     stmt = "x = GET process FROM if://ds WHERE process:binary_ref.name = 'foo'"
     parse_filter = get_parsed_filter_exp(stmt)
-    assert parse_filter.field == 'file.name'
+    assert parse_filter.field == 'process.file.name'
     # test when entity name is not included in the attributes
     stmt = "x = GET process FROM if://ds WHERE binary_ref.name = 'foo'"
     parse_filter = get_parsed_filter_exp(stmt)
-    assert parse_filter.field == 'file.name'
-
-
-def test_parser_mapping_single_comparison_to_multiple_values():
+    assert parse_filter.field == 'process.file.name'
+    # another test
     stmt = "x = GET ipv4-addr FROM if://ds WHERE value = '192.168.22.3'"
     parse_filter = get_parsed_filter_exp(stmt)
-    comps = parse_filter.comps
-    assert isinstance(comps, list) and len(comps) == 4
-    fields = [x.field for x in comps]
-    assert ("dst_endpoint.ip" in fields and "src_endpoint.ip" in fields and
-            "device.ip" in fields and "endpoint.ip" in fields)
+    assert parse_filter.field == 'network_endpoint.ip'
+
+
+def test_parser_stix_mapping_network_traffic():
+    stmt = "x = GET network-traffic FROM if://ds WHERE src_ref.value = '192.168.22.3'"
+    parse_filter = get_parsed_filter_exp(stmt)
+    assert parse_filter.field == 'src_endpoint.ip'
 
 
 def test_parser_mapping_multiple_comparison_to_multiple_values():
@@ -120,11 +120,11 @@ def test_parser_mapping_multiple_comparison_to_multiple_values():
         "OR name = 'bam' AND parent_ref.name = 'boom'"
     parse_filter = get_parsed_filter_exp(stmt)
     field1 = parse_filter.lhs.field
-    assert field1 == 'file.name'
+    assert field1 == 'process.file.name'
     field2 = parse_filter.rhs.lhs.field
-    assert field2 == 'name'  # 'process.name'
+    assert field2 == 'process.name'  # 'process.name'
     field3 = parse_filter.rhs.rhs.field
-    assert field3 == "parent_process.name"
+    assert field3 == "process.parent_process.name"
 
 
 def test_parser_new_json():
@@ -286,3 +286,18 @@ EXPLAIN proclist
     assert len(graph) == 4
     assert len(graph.edges) == 3
     assert Counter(map(type, graph.nodes())) == Counter([Construct, Variable, Explain, Return])
+
+
+@pytest.mark.parametrize(
+    "stmt, entity, key", [
+        ("x = GET registry FROM if://ds WHERE key = 'bar'", "reg_key", "reg_key.path"),
+        ("x = GET user-account FROM if://ds WHERE user_id = '123'", "user", "user.uid"),
+        ("x = GET host FROM if://ds WHERE name = 'bar'", "endpoint", "endpoint.name"),
+        ("x = GET destination FROM if://ds WHERE mac = '22:33:44:55'", "network_endpoint", "network_endpoint.mac"),
+        ("x = GET registry FROM if://ds WHERE key = 'bar'", "reg_key", "reg_key.path"),
+    ]
+)
+def test_parser_entity_and_property_mapping(stmt, entity, key):
+    graph = parse_kestrel(stmt)
+    assert graph.get_nodes_by_type(ProjectEntity)[0].entity_type == entity
+    assert graph.get_nodes_by_type(Filter)[0].exp.field == key

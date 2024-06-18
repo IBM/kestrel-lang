@@ -68,6 +68,16 @@ def _unescape_quoted_string(s: str):
 
 
 @typechecked
+def _trim_ocsf_event_field(field: str) -> str:
+    """Remove event name (as prefix) if the field starts with an event"""
+    items = field.split(".")
+    if items[0].endswith("_event") or items[0].endswith("_activity"):
+        return ".".join(items[1:])
+    else:
+        return field
+
+
+@typechecked
 def _create_comp(field: str, op_value: str, value) -> FComparison:
     # TODO: implement MultiComp
 
@@ -87,27 +97,44 @@ def _create_comp(field: str, op_value: str, value) -> FComparison:
     else:
         op = StrCompOp
         comp = StrComparison
-    return comp(field, op(op_value), value)
+    return comp(_trim_ocsf_event_field(field), op(op_value), value)
 
 
 @typechecked
 def _map_filter_exp(
-    entity_name: str, filter_exp: FExpression, property_map: dict
+    native_entity_name: str,
+    mapped_entity_name: str,
+    filter_exp: FExpression,
+    property_map: dict,
 ) -> FExpression:
     if isinstance(
         filter_exp,
         (IntComparison, FloatComparison, StrComparison, ListComparison, RefComparison),
     ):
-        # get the field
+        # get the field/key
         field = filter_exp.field
-        # add entity to field if it doesn't have one already
-        if ":" not in field:
-            field = f"{entity_name}:{field}"
-        # map field to new syntax (e.g. STIX to OCSF)
-        # TODO: ECS to OCSF?  Would need to merge STIX and ECS data model maps.
-        map_result = translate_comparison_to_ocsf(
-            property_map, field, filter_exp.op, filter_exp.value
+        # init map_result from direct mapping from field
+        map_result = set(
+            translate_comparison_to_ocsf(
+                property_map, field, filter_exp.op, filter_exp.value
+            )
         )
+        # there is a case that `field` omits the return entity (prefix)
+        # this is only alloed when it refers to the return entity
+        # add mapping for those cases
+        for full_field in (
+            f"{native_entity_name}:{field}",
+            f"{native_entity_name}.{field}",
+        ):
+            map_result |= set(
+                filter(
+                    lambda x: x[0].startswith(mapped_entity_name + "."),
+                    translate_comparison_to_ocsf(
+                        property_map, full_field, filter_exp.op, filter_exp.value
+                    ),
+                )
+            )
+
         # Build a MultiComp if field maps to several values
         if len(map_result) > 1:
             filter_exp = MultiComp(
@@ -115,14 +142,10 @@ def _map_filter_exp(
                 [_create_comp(field, op, value) for field, op, value in map_result],
             )
         elif len(map_result) == 1:  # it maps to a single value
-            mapping = map_result[0]
+            mapping = map_result.pop()
             _logger.debug("mapping = %s", mapping)
             field = mapping[0]
-            prefix = f"{entity_name}."
-            if field.startswith(prefix):
-                # Need to prune the entity name
-                field = field[len(prefix) :]
-            filter_exp.field = field
+            filter_exp.field = _trim_ocsf_event_field(field)
             filter_exp.op = mapping[1]
             filter_exp.value = mapping[2]
         else:  # pass-through
@@ -132,9 +155,13 @@ def _map_filter_exp(
     elif isinstance(filter_exp, BoolExp):
         # recursively map boolean expressions
         filter_exp = BoolExp(
-            _map_filter_exp(entity_name, filter_exp.lhs, property_map),
+            _map_filter_exp(
+                native_entity_name, mapped_entity_name, filter_exp.lhs, property_map
+            ),
             filter_exp.op,
-            _map_filter_exp(entity_name, filter_exp.rhs, property_map),
+            _map_filter_exp(
+                native_entity_name, mapped_entity_name, filter_exp.rhs, property_map
+            ),
         )
     elif isinstance(filter_exp, MultiComp):
         # normally, this should be unreachable
@@ -143,7 +170,10 @@ def _map_filter_exp(
         # in addition to Comparisons in its `comps` list
         filter_exp = MultiComp(
             filter_exp.op,
-            [_map_filter_exp(entity_name, x, property_map) for x in filter_exp.comps],
+            [
+                _map_filter_exp(native_entity_name, mapped_entity_name, x, property_map)
+                for x in filter_exp.comps
+            ],
         )
     return filter_exp
 
@@ -261,7 +291,7 @@ class _KestrelT(Transformer):
         # prepare Filter node
         filter_node = args[2]
         filter_node.exp = _map_filter_exp(
-            args[0].value, filter_node.exp, self.property_map
+            args[0].value, mapped_entity_name, filter_node.exp, self.property_map
         )
 
         # add basic Source and Filter nodes
