@@ -219,10 +219,9 @@ def load_default_mapping(
     submodule: str = "entityattribute",
 ):
     result = {}
-    entityattr_mapping_files = list_folder_files(
+    for f in list_folder_files(
         mapping_pkg, submodule, prefix=data_model_name, extension="yaml"
-    )
-    for f in entityattr_mapping_files:
+    ):
         with open(f, "r") as fp:
             result.update(yaml.safe_load(fp))
     return result

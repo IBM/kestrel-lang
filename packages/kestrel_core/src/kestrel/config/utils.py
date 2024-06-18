@@ -19,21 +19,6 @@ _logger = logging.getLogger(__name__)
 
 
 @typechecked
-def list_yaml_files_in_module(module_name: str) -> Iterable[str]:
-    """List YAML files inside a Python module"""
-    try:
-        # resources.files() is introduced in Python 3.9
-        p = resources.files(module_name)
-    except AttributeError as e:
-        # Python 3.8; deprecation warning forward
-        if is_python_older_than_minor_version(9):
-            p = Path(os.path.dirname(sys.modules[module_name].__file__))
-        else:
-            raise e
-    return [x.name for x in p.glob("*.yaml")]
-
-
-@typechecked
 def load_leaf_yaml(config: Mapping, path_dir: str) -> Mapping:
     new = {}
     for k, v in config.items():

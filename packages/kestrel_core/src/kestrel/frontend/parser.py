@@ -1,13 +1,11 @@
 # parse Kestrel syntax, apply frontend mapping, transform to IR
 
-import os
 import logging
 from itertools import chain
 
 from kestrel.frontend.compile import _KestrelT
 from kestrel.mapping.data_model import reverse_mapping
-from kestrel.utils import load_data_file
-from kestrel.config.utils import list_yaml_files_in_module
+from kestrel.utils import load_data_file, list_folder_files
 from lark import Lark
 from typeguard import typechecked
 import yaml
@@ -21,13 +19,13 @@ frontend_mapping = {}
 
 
 @typechecked
-def get_frontend_mapping(mapping_type: str, mapping_package: str) -> dict:
+def get_frontend_mapping(mapping_type: str, mapping_pkg: str, submodule: str) -> dict:
     global frontend_mapping
     if mapping_type not in frontend_mapping:
         mapping = {}
-        for yaml_file in list_yaml_files_in_module(mapping_package):
-            mapping_str = load_data_file(mapping_package, yaml_file)
-            mapping_ind = yaml.safe_load(mapping_str)
+        for f in list_folder_files(mapping_pkg, submodule, extension="yaml"):
+            with open(f, "r") as fp:
+                mapping_ind = yaml.safe_load(fp)
             if mapping_type == "property":
                 # New data model map is always OCSF->native
                 mapping_ind = reverse_mapping(mapping_ind)
@@ -57,9 +55,9 @@ _parser = Lark(
     load_data_file("kestrel.frontend", "kestrel.lark"),
     parser="lalr",
     transformer=_KestrelT(
-        entity_map=get_frontend_mapping("entity", "kestrel.mapping.entityname"),
+        entity_map=get_frontend_mapping("entity", "kestrel.mapping", "entityname"),
         property_map=get_frontend_mapping(
-            "property", "kestrel.mapping.entityattribute"
+            "property", "kestrel.mapping", "entityattribute"
         ),
     ),
 )
