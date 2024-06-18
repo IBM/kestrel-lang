@@ -1,13 +1,10 @@
 import os
-import sys
 import yaml
-from importlib import resources
 from pathlib import Path
 import logging
 from typeguard import typechecked
-from typing import Mapping, Union, Iterable
+from typing import Mapping, Union
 
-from kestrel.__future__ import is_python_older_than_minor_version
 from kestrel.utils import update_nested_dict, load_data_file
 from kestrel.exceptions import InvalidYamlInConfig, InvalidKestrelConfig
 
