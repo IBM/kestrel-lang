@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 from functools import reduce
 from typing import Optional, Union
 
@@ -143,25 +144,19 @@ def translate_comparison_to_native(
         else:
             raise NotImplementedError("complex native mapping")
     else:
-        parts = field.split(".")
-        tmp = dmm
-        for part in parts:
-            if isinstance(tmp, dict):
-                tmp = tmp.get(part, {})
-            else:
-                break
-        if tmp:
-            if isinstance(tmp, list):
-                for i in tmp:
+        try:
+            node = reduce(dict.__getitem__, field.split("."), dmm)
+            if isinstance(node, list):
+                for i in node:
                     if isinstance(i, dict):
                         result.append(_get_map_triple(i, "native", op, value))
                     else:
                         result.append((i, op, value))
-            elif isinstance(tmp, dict):
-                result.append(_get_map_triple(tmp, "native", op, value))
-            elif isinstance(tmp, str):
-                result.append((tmp, op, value))
-        else:
+            elif isinstance(node, dict):
+                result.append(_get_map_triple(node, "native", op, value))
+            elif isinstance(node, str):
+                result.append((node, op, value))
+        except KeyError:
             # Pass-through
             result.append((field, op, value))
     _logger.debug("comp_to_native: return %s", result)
@@ -273,41 +268,33 @@ def translate_projection_to_native(
     # TODO: optional str or callable for joining entity_type and attr?
 ) -> list:
     result = []
+
     if entity_type:
         dmm = dmm[entity_type]
-    if not attrs:
+
+    if attrs:
+        # project specified attributes
+        for attr in attrs:
+            try:
+                mapping = reduce(dict.__getitem__, attr.split("."), dmm)
+                result.extend(
+                    [(i, attr) for i in _get_from_mapping(mapping, "native_field")]
+                )
+            except KeyError:
+                # TODO: think better way than pass-through, e.g., raise exception
+                _logger.warning(f"mapping not found for entity: '{entity_type}' and attribute: '{attr}'; treat it as no mapping needed")
+                result.append((attr, attr))
+    else:
+        # project all attributes known for the entity (or event if no entity specified)
         for native_field, mapping in reverse_mapping(dmm).items():
             result.extend(
                 [(native_field, i) for i in _get_from_mapping(mapping, "ocsf_field")]
             )
-        attrs = []
-    for attr in attrs:
-        mapping = dmm.get(attr)
-        if not mapping:
-            parts = attr.split(".")
-            tmp = dmm
-            for part in parts:
-                if isinstance(tmp, dict):
-                    tmp = tmp.get(part, {})
-                else:
-                    break
-            if tmp:
-                mapping = tmp
-        if mapping:
-            result.extend(
-                [(i, attr) for i in _get_from_mapping(mapping, "native_field")]
-            )
-        else:
-            # Pass-through?
-            result.append((attr, attr))  # FIXME: raise exception instead?
+
     # De-duplicate list while maintaining order
-    seen = set()
-    final_result = []
-    for pair in result:
-        if pair not in seen:
-            final_result.append(pair)
-            seen.add(pair)
+    final_result = list(OrderedDict.fromkeys(result))
     _logger.debug("proj_to_native: return %s", final_result)
+
     return final_result
 
 
