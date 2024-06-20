@@ -282,7 +282,9 @@ def translate_projection_to_native(
                 )
             except KeyError:
                 # TODO: think better way than pass-through, e.g., raise exception
-                _logger.warning(f"mapping not found for entity: '{entity_type}' and attribute: '{attr}'; treat it as no mapping needed")
+                _logger.warning(
+                    f"mapping not found for entity: '{entity_type}' and attribute: '{attr}'; treat it as no mapping needed"
+                )
                 result.append((attr, attr))
     else:
         # project all attributes known for the entity (or event if no entity specified)
