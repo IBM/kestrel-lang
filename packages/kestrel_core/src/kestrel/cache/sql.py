@@ -28,7 +28,7 @@ _logger = logging.getLogger(__name__)
 
 
 @typechecked
-class SqliteTranslator(SqlTranslator):
+class SqlCacheTranslator(SqlTranslator):
     def __init__(self, from_obj: Union[sqlalchemy.sql.expression.CTE, str]):
         if isinstance(from_obj, sqlalchemy.sql.expression.CTE):
             fc = from_obj
@@ -124,7 +124,7 @@ class SqlCache(AbstractCache):
         graph: IRGraphEvaluable,
         instruction: Instruction,
         cte_memory: Optional[Mapping[UUID, sqlalchemy.sql.expression.CTE]] = None,
-    ) -> SqliteTranslator:
+    ) -> SqlCacheTranslator:
         """Evaluate the instruction in the graph
 
         This method recursively traverse the graph from the instruction node to
@@ -156,15 +156,15 @@ class SqlCache(AbstractCache):
         if instruction.id in self:
             # cached in sqlite
             table_name = self.cache_catalog[instruction.id]
-            translator = SqliteTranslator(table_name)
+            translator = SqlCacheTranslator(table_name)
 
         elif isinstance(instruction, SourceInstruction):
             if isinstance(instruction, Construct):
                 # cache the data
                 self[instruction.id] = DataFrame(instruction.data)
-                # pull the data to start a SqliteTranslator
+                # pull the data to start a SqlCacheTranslator
                 table_name = self.cache_catalog[instruction.id]
-                translator = SqliteTranslator(table_name)
+                translator = SqlCacheTranslator(table_name)
             else:
                 raise NotImplementedError(f"Unknown instruction type: {instruction}")
 
@@ -172,7 +172,7 @@ class SqlCache(AbstractCache):
             if instruction.id in cte_memory:
                 # this is a Variable, already evaluated
                 # just create a new use/translator from this Variable
-                translator = SqliteTranslator(cte_memory[instruction.id])
+                translator = SqlCacheTranslator(cte_memory[instruction.id])
             else:
                 trunk, r2n = graph.get_trunk_n_branches(instruction)
                 translator = self._evaluate_instruction_in_graph(
@@ -185,7 +185,7 @@ class SqlCache(AbstractCache):
                     elif isinstance(instruction, Variable):
                         cte = translator.query.cte(name=instruction.name)
                         cte_memory[instruction.id] = cte
-                        translator = SqliteTranslator(cte)
+                        translator = SqlCacheTranslator(cte)
                     else:
                         translator.add_instruction(instruction)
 
