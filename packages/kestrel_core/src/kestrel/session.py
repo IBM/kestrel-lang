@@ -8,7 +8,7 @@ from kestrel.display import Display, GraphExplanation
 from kestrel.ir.graph import IRGraph
 from kestrel.ir.instructions import Instruction, Explain
 from kestrel.frontend.parser import parse_kestrel
-from kestrel.cache import SqliteCache
+from kestrel.cache import SqlCache
 from kestrel.config.internal import CACHE_INTERFACE_IDENTIFIER
 from kestrel.interface import InterfaceManager
 from kestrel.exceptions import InstructionNotFound
@@ -26,7 +26,7 @@ class Session(AbstractContextManager):
         self.irgraph = IRGraph()
 
         # load all interfaces; cache is a special interface
-        cache = SqliteCache()
+        cache = SqlCache()
         self.interface_manager = InterfaceManager([cache])
 
     def execute(self, huntflow_block: str) -> Iterable[Display]:

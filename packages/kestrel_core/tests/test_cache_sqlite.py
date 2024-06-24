@@ -1,14 +1,14 @@
 from uuid import uuid4
 from pandas import DataFrame
 
-from kestrel.cache import SqliteCache
-from kestrel.cache.sqlite import SqliteCacheVirtual
+from kestrel.cache import SqlCache
+from kestrel.cache.sql import SqlCacheVirtual
 from kestrel.ir.graph import IRGraphEvaluable
 from kestrel.frontend.parser import parse_kestrel
 
 
-def test_sqlite_cache_set_get_del():
-    c = SqliteCache()
+def test_sql_cache_set_get_del():
+    c = SqlCache()
     idx = uuid4()
     df = DataFrame({'foo': [1, 2, 3]})
     c[idx] = df
@@ -17,10 +17,10 @@ def test_sqlite_cache_set_get_del():
     assert idx not in c
 
 
-def test_sqlite_cache_constructor():
+def test_sql_cache_constructor():
     ids = [uuid4() for i in range(5)]
     df = DataFrame({'foo': [1, 2, 3]})
-    c = SqliteCache({x:df for x in ids})
+    c = SqlCache({x:df for x in ids})
     for u in ids:
         assert df.equals(c[u])
     for u in ids:
@@ -38,7 +38,7 @@ proclist = NEW process [ {"name": "cmd.exe", "pid": 123}
 DISP proclist ATTR name
 """
     graph = IRGraphEvaluable(parse_kestrel(stmt))
-    c = SqliteCache()
+    c = SqlCache()
     mapping = c.evaluate_graph(graph)
 
     # check the return is correct
@@ -63,7 +63,7 @@ browsers = proclist WHERE name = 'firefox.exe' OR name = 'chrome.exe'
 DISP browsers ATTR name, pid
 """
     graph = IRGraphEvaluable(parse_kestrel(stmt))
-    c = SqliteCache()
+    c = SqlCache()
     mapping = c.evaluate_graph(graph)
 
     # check the return is correct
@@ -87,7 +87,7 @@ DISP browsers
 DISP browsers ATTR pid
 """
     graph = parse_kestrel(stmt)
-    c = SqliteCache()
+    c = SqlCache()
     rets = graph.get_returns()
 
     # first DISP
@@ -126,7 +126,7 @@ proclist = NEW process [ {"name": "cmd.exe", "pid": 123}
 browsers = proclist WHERE name IN ("explorer.exe", "firefox.exe", "chrome.exe")
 """
     graph = IRGraphEvaluable(parse_kestrel(stmt))
-    c = SqliteCache()
+    c = SqlCache()
     _ = c.evaluate_graph(graph)
 
 
@@ -143,7 +143,7 @@ p2 = proclist WHERE pid = browsers.pid and name = specials.name
 DISP p2 ATTR name, pid
 """
     graph = IRGraphEvaluable(parse_kestrel(stmt))
-    c = SqliteCache()
+    c = SqlCache()
     mapping = c.evaluate_graph(graph)
 
     # check the return is correct
@@ -162,14 +162,14 @@ proclist = NEW process [ {"name": "cmd.exe", "pid": 123}
 browsers = proclist WHERE name = 'firefox.exe' OR name = 'chrome.exe'
 """
     graph = IRGraphEvaluable(parse_kestrel(stmt))
-    c = SqliteCache()
+    c = SqlCache()
     mapping = c.evaluate_graph(graph)
     v = c.get_virtual_copy()
     new_entry = uuid4()
     v[new_entry] = True
 
     # v[new_entry] calls the right method
-    assert isinstance(v, SqliteCacheVirtual)
+    assert isinstance(v, SqlCacheVirtual)
     assert v[new_entry].endswith("v")
 
     # the two cache_catalog are different

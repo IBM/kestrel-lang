@@ -41,7 +41,7 @@ class SqliteTranslator(SqlTranslator):
 
 
 @typechecked
-class SqliteCache(AbstractCache):
+class SqlCache(AbstractCache):
     def __init__(
         self,
         initial_cache: Optional[Mapping[UUID, DataFrame]] = None,
@@ -84,7 +84,7 @@ class SqliteCache(AbstractCache):
     def get_virtual_copy(self) -> AbstractCache:
         v = copy(self)
         v.cache_catalog = copy(self.cache_catalog)
-        v.__class__ = SqliteCacheVirtual
+        v.__class__ = SqlCacheVirtual
         return v
 
     def evaluate_graph(
@@ -215,7 +215,7 @@ class SqliteCache(AbstractCache):
 
 
 @typechecked
-class SqliteCacheVirtual(SqliteCache):
+class SqlCacheVirtual(SqlCache):
     def __getitem__(self, instruction_id: UUID) -> Any:
         return self.cache_catalog[instruction_id]
 
