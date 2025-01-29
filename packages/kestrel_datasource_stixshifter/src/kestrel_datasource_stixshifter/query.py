@@ -263,9 +263,8 @@ async def query_datasource_async(uri, pattern, session_id, config, store, limit=
 
             await async_translator.run_async()
                 # Read translated results
-            for result in multiproc.read_translated_results(
+            for result in async_translator.read_translated_results(
                 translated_data_queue,
-                config["options"]["translation_workers_count"],
             ):
                 num_records += get_num_objects(result)
                 ingest(result, observation_metadata, query_id, store)
