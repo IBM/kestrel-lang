@@ -108,7 +108,7 @@ class AsyncTranslator:
                                             f"STIX-shifter fast translation parquet write to disk failed: [{type(e).__name__}] {e}",
                                         ),
                                     )
-                                    self.output_queue.put(packet_extra)
+                                    await put_in_queue(self.output_queue, packet_extra)
 
                 else:
                     stixbundle = translation.translate(
@@ -155,15 +155,19 @@ class AsyncTranslator:
                                     f"STIX-shifter translation bundle write to disk failed",
                                 ),
                             )
-                            self.output_queue.put(packet_extra)
+                            await put_in_queue(self.output_queue, packet_extra)
 
             else:  # rely transmission error/info/debug message
                 packet = input_batch
 
-            self.output_queue.put(packet)
+            await put_in_queue(self.output_queue, packet)
 
-        self.output_queue.put(STOP_SIGN)
+        await put_in_queue(self.output_queue, STOP_SIGN)
 
     def get_cache_data_path(self, offset, suffix):
         offset = str(offset).zfill(32)
         return f"{self.cache_data_path_prefix}_{offset}.{suffix}"
+    
+async def put_in_queue(queue: Queue, packet):
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, queue.put, packet)
