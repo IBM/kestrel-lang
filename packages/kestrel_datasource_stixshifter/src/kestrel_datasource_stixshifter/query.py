@@ -14,6 +14,7 @@ from kestrel_datasource_stixshifter import multiproc
 from kestrel_datasource_stixshifter.worker import STOP_SIGN
 from kestrel_datasource_stixshifter.async_transmitter import AsyncTransmitter
 from kestrel_datasource_stixshifter.subquery import split_subquery_by_time_window
+from kestrel_datasource_stixshifter.async_translator import AsyncTranslator
 from kestrel_datasource_stixshifter.config import (
     get_datasource_from_profiles,
     load_options,
@@ -226,19 +227,9 @@ async def query_datasource_async(uri, pattern, session_id, config, store, limit=
             raw_records_queue = Queue()
             translated_data_queue = Queue()
 
-            with multiproc.translate(
-                connector_name,
-                observation_metadata,
-                connection_dict.get("options", {}),
-                cache_data_path_prefix,
-                connector_name in config["options"]["fast_translate"],
-                raw_records_queue,
-                translated_data_queue,
-                config["options"]["translation_workers_count"],
-                custom_mappings,
-            ):
+            
                 # Start transmitters asynchronously
-                transmitters = [
+            transmitters = [
                     AsyncTransmitter(
                         connector_name,
                         connection_dict,
@@ -253,20 +244,31 @@ async def query_datasource_async(uri, pattern, session_id, config, store, limit=
                     )
                     for query in dsl["queries"]
                 ]
-                transmitter_tasks = [transmitter.run() for transmitter in transmitters]
-                await asyncio.gather(*transmitter_tasks)
+            transmitter_tasks = [transmitter.run() for transmitter in transmitters]
+            await asyncio.gather(*transmitter_tasks)
 
                 # Signal translators to stop
-                for _ in range(config["options"]["translation_workers_count"]):
-                    await put_in_queue(raw_records_queue, STOP_SIGN)
+            await put_in_queue(raw_records_queue, STOP_SIGN)
+            
+            async_translator = AsyncTranslator(
+                connector_name,
+                observation_metadata,
+                connection_dict.get("options", {}),
+                cache_data_path_prefix,
+                connector_name in config["options"]["fast_translate"],
+                raw_records_queue,
+                translated_data_queue,
+                custom_mappings,
+            )
 
+            await async_translator.run_async()
                 # Read translated results
-                for result in multiproc.read_translated_results(
-                    translated_data_queue,
-                    config["options"]["translation_workers_count"],
-                ):
-                    num_records += get_num_objects(result)
-                    ingest(result, observation_metadata, query_id, store)
+            for result in multiproc.read_translated_results(
+                translated_data_queue,
+                config["options"]["translation_workers_count"],
+            ):
+                num_records += get_num_objects(result)
+                ingest(result, observation_metadata, query_id, store)
 
     return ReturnFromStore(query_id)
 
