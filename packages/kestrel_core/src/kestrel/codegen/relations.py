@@ -253,8 +253,13 @@ def _query_process_with_time_and_ppid(store, var_table_name):
             rid = row["id"]
             pname = row["name"]
             ppid = row["ppid"] if has_parent_ref else None
-            st = to_datetime(row["first_observed"])
-            ed = to_datetime(row["last_observed"])
+            try:
+                st = to_datetime(row["first_observed"])
+                ed = to_datetime(row["last_observed"])
+            except Exception as e:
+                _logger.error(f"query failed: {e!s}")
+                st = datetime.datetime.now()
+                ed = datetime.datetime.now()
             pid2procs[row["pid"]].append((rid, (pname, ppid, st, ed)))
 
     return pid2procs
